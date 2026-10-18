@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E6B58">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מתכונים">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ספריית המתכונים</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: one narrow column that works on a phone first. List -> reading view -> editor, one view at a time. */
+:root{
+  --bg:#F2F4F0; --surface:#FFFFFF; --surface2:#E7ECE4; --ink:#1D2823; --muted:#58665F; --line:#D3DBD0;
+  --accent:#1E6B58; --accent-ink:#FFFFFF; --hl:#F1C453; --hl-ink:#3A2D00; --danger:#B3382C;
+  --f-display:'Secular One','Assistant',system-ui,sans-serif;
+  --f-body:'Assistant',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --fs:1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1714; --surface:#17211D; --surface2:#1F2B26; --ink:#E6EEE9; --muted:#98A8A0; --line:#2B3933;
+    --accent:#62C9AB; --accent-ink:#07231A; --hl:#E0B445; --hl-ink:#261D00; --danger:#F08073; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1714; --surface:#17211D; --surface2:#1F2B26; --ink:#E6EEE9; --muted:#98A8A0; --line:#2B3933;
+  --accent:#62C9AB; --accent-ink:#07231A; --hl:#E0B445; --hl-ink:#261D00; --danger:#F08073; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.5;
+  padding-block:0 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust:100%;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+#root{max-width:720px;margin-inline:auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;line-height:1.2}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:grid;gap:10px;padding-block:14px 8px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar h1{font-size:1.6rem;min-width:0}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.btn.small{min-height:40px;padding:0 12px;font-size:.92rem}
+.btn[aria-pressed="true"]{background:var(--hl);color:var(--hl-ink);border-color:var(--hl)}
+.search{width:100%;min-height:46px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-block:2px 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:.93rem}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip .n{opacity:.7;font-weight:400;margin-inline-start:4px}
+
+.cards{display:grid;gap:10px;grid-template-columns:1fr;padding-block:6px}
+@media (min-width:640px){.cards{grid-template-columns:1fr 1fr}}
+.card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);min-width:0;width:100%}
+.card:active{background:var(--surface2)}
+.ct{font-family:var(--f-display);font-size:1.2rem;line-height:1.25;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cm{color:var(--muted);font-size:.9rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:.8rem;padding:2px 9px;border-radius:10px;background:var(--surface2);color:var(--muted);font-weight:600}
+.badge{font-family:var(--f-body);font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--hl);color:var(--hl-ink)}
+.empty{padding:28px 8px;color:var(--muted);text-align:center}
+.foot{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding-block:22px 6px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px}
+.steps-help{margin:0;padding-inline-start:20px;color:var(--muted);display:grid;gap:4px}
+.field{display:grid;gap:6px}
+.field label{font-weight:700;font-size:.92rem}
+.field input,.field textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);min-height:46px}
+.field textarea{min-height:150px;resize:vertical;line-height:1.55}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{min-width:0}
+.row .field{flex:1 1 140px}
+.notice{padding:10px 12px;border-radius:10px;background:var(--hl);color:var(--hl-ink);font-weight:600}
+.err{color:var(--danger);font-weight:600}
+
+.read h1{font-size:2rem;margin-block:6px 6px}
+.meta{color:var(--muted);margin-bottom:8px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;padding-block:10px}
+.sec{margin-block:20px 8px;font-size:1.3rem}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:calc(1.08rem * var(--fs))}
+.list li button{width:100%;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:11px 14px;min-height:46px;display:flex;gap:12px;align-items:flex-start}
+.list li button .mk{flex:0 0 22px;height:22px;margin-top:2px;border-radius:6px;border:2px solid var(--accent);display:grid;place-items:center;font-size:.85rem;font-weight:700;color:transparent}
+.list li button[aria-pressed="true"]{background:var(--surface2);color:var(--muted);text-decoration:line-through}
+.list li button[aria-pressed="true"] .mk{background:var(--accent);color:var(--accent-ink)}
+.list.steps li button .mk{border-radius:50%;color:var(--accent);font-family:var(--f-display);font-size:.95rem}
+.list.steps li button[aria-pressed="true"] .mk{color:var(--accent-ink)}
+.txt{min-width:0;overflow-wrap:anywhere}
+.notes{white-space:pre-wrap;padding:12px 14px;border-radius:10px;background:var(--surface2);font-size:calc(1rem * var(--fs))}
+.src{display:inline-flex;margin-top:14px}
+.danger-zone{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap}
+
+.trow{display:flex;gap:8px;align-items:center}
+.trow input{flex:1 1 auto;min-width:0;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.edchips{display:flex;flex-wrap:wrap;gap:8px}
+
+#toast{position:fixed;inset-inline:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));margin-inline:auto;max-width:420px;padding:12px 16px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:600;text-align:center;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
+#toast.on{opacity:1;transform:none}
+.sheet{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--bg) 80%,transparent);display:grid;align-items:end;padding:16px}
+.sheet .panel{max-width:720px;width:100%;margin-inline:auto;max-height:85vh;overflow:auto}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+.card{flex-direction:row;align-items:flex-start;gap:12px}
+.cb{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;flex:1}
+.th{flex:0 0 72px;width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--surface2)}
+.hero{display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-block:6px 10px}
+.desc{margin:4px 0 8px;color:var(--muted);font-size:calc(1rem * var(--fs))}
+.list li.grp{font-family:var(--f-display);font-size:1.05rem;color:var(--accent);padding:10px 2px 0}
+.imgbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.imgbox img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.cw{position:relative;display:grid;min-width:0}
+.cw .card{padding-left:56px}
+.kebab{position:absolute;top:8px;left:8px;width:42px;height:42px;border-radius:21px;border:1px solid var(--line);background:var(--surface);font-size:1.4rem;line-height:1;display:grid;place-items:center}
+.cmenu{display:flex;gap:8px;flex-wrap:wrap;padding:8px 2px 2px}
+</style>
+
+<div id="root" dir="rtl" lang="he"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var KEY='kitchen.library.v1', PREF='kitchen.prefs.v1';
+var BM="javascript:(function(){try{var D=document,B=String.fromCharCode(92),NL=String.fromCharCode(10);function H(s){return s.split(',').map(function(x){return String.fromCharCode(parseInt(x,16));}).join('');}var WS=new RegExp(B+'s+','g'),NLS=new RegExp(B+'n+'),DUR=new RegExp('^P(?:('+B+'d+)D)?T?(?:('+B+'d+)H)?(?:('+B+'d+)M)?','i');function dec(s){var t=D.createElement('textarea');t.innerHTML=String(s==null?'':s);return t.value.replace(WS,' ').trim();}function find(n){if(!n||typeof n!=='object')return null;if(Array.isArray(n)){for(var i=0;i<n.length;i++){var r=find(n[i]);if(r)return r;}return null;}var t=n['@type'];if(t&&(t==='Recipe'||(Array.isArray(t)&&t.indexOf('Recipe')>=0)))return n;return n['@graph']?find(n['@graph']):null;}function steps(x){if(!x)return[];if(typeof x==='string')return x.split(NLS).map(dec).filter(Boolean);if(Array.isArray(x))return x.reduce(function(a,y){return a.concat(steps(y));},[]);if(x.itemListElement)return steps(x.itemListElement);if(x.text)return steps(x.text);if(x.name)return steps(x.name);return[];}function dur(s){var m=DUR.exec(String(s||''));if(!m)return'';var n=(+m[1]||0)*1440+(+m[2]||0)*60+(+m[3]||0);if(!n)return'';var h=Math.floor(n/60),r=n-h*60;return h?(r?h+' '+H(\"5e9,5e2,5d5,5ea\")+' '+H(\"5d5,2d\")+r+' '+H(\"5d3,5e7,5d5,5ea\"):h+' '+H(\"5e9,5e2,5d5,5ea\")):r+' '+H(\"5d3,5e7,5d5,5ea\");}var r=null,s=D.querySelectorAll('script[type=\"application/ld+json\"]');for(var i=0;i<s.length&&!r;i++){try{r=find(JSON.parse(s[i].textContent));}catch(e){}}var obj,ok=!!r,imgs='';if(r){var ing=r.recipeIngredient||r.ingredients||[];if(!Array.isArray(ing))ing=[ing];var y=r.recipeYield;if(Array.isArray(y))y=y[0];obj={kitchenLibrary:1,single:1,recipes:[{title:dec(r.name||D.title),desc:dec(r.description||''),ingredients:ing.map(dec).filter(Boolean),steps:steps(r.recipeInstructions),time:dur(r.totalTime),yield:y?dec(y):'',image:'',source:location.href}]};imgs=r.image;}else{var h1=D.querySelector('h1');var raw=(D.body.innerText||'');if(raw.length>80000)raw=raw.slice(0,80000);obj={kitchenLibrary:1,single:1,image:'',text:dec(h1?h1.textContent:D.title)+NL+H(\"5de,5e7,5d5,5e8\")+': '+location.href+NL+NL+raw};var og=D.querySelector('meta[property=\"og:image\"]');imgs=og?og.getAttribute('content'):'';}var iu=Array.isArray(imgs)?imgs[0]:imgs;if(iu&&typeof iu==='object')iu=iu.url;try{if(iu)iu=new URL(iu,location.href).href;}catch(e){iu='';}var old=D.getElementById('kitchen-bm');if(old)old.parentNode.removeChild(old);var o=D.createElement('div');o.id='kitchen-bm';o.style.cssText='position:fixed;z-index:2147483647;top:0;left:0;right:0;padding:14px;background:white;color:black;font:16px/1.4 sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.45);direction:rtl;text-align:right';var m=D.createElement('div');m.style.cssText='font-weight:700;margin-bottom:8px';var ta=D.createElement('textarea');ta.style.cssText='width:calc(100vw - 30px);height:70px;direction:ltr;font-size:16px;box-sizing:border-box';var b=D.createElement('button');b.textContent=H(\"5d4,5e2,5ea,5e7,5d4\");b.style.cssText='font-size:17px;padding:10px 20px;margin:8px 0 0 8px';var c=D.createElement('button');c.textContent=H(\"5e1,5d2,5d9,5e8,5d4\");c.style.cssText='font-size:17px;padding:10px 20px;margin:8px 0 0 8px';var out='';function fin(){out=JSON.stringify(obj);ta.value=out;m.textContent=(ok?H(\"5d6,5d5,5d4,5d4,20,5de,5ea,5db,5d5,5df,3a,20\")+dec(r.name||D.title):H(\"5e0,5d0,5e1,5e3,20,5d8,5e7,5e1,5d8,20,5d4,5d3,5e3,2e,20,5d4,5e0,5d9,5e7,5d5,5d9,20,5d9,5ea,5d1,5e6,5e2,20,5d1,5e1,5e4,5e8,5d9,5d9,5d4,2e\"))+(obj.image||(obj.recipes&&obj.recipes[0].image)?' + '+H(\"5ea,5de,5d5,5e0,5d4\"):'');}function setImg(d){if(obj.recipes)obj.recipes[0].image=d;else obj.image=d;}function cp(){ta.focus();ta.select();ta.setSelectionRange(0,out.length);var k=false;try{k=D.execCommand('copy');}catch(e){}if(!k&&navigator.clipboard){try{navigator.clipboard.writeText(out);k=true;}catch(e){}}m.textContent=k?H(\"5d4,5d5,5e2,5ea,5e7,2e,20,5d7,5d6,5d5,5e8,20,5dc,5e1,5e4,5e8,5d9,5d9,5d4,20,5d5,5d4,5d3,5d1,5e7,2e\"):H(\"5e1,5de,5df,20,5d0,5ea,20,5d4,5d8,5e7,5e1,5d8,20,5d5,5d4,5e2,5ea,5e7,20,5d9,5d3,5e0,5d9,5ea,2e\");}b.onclick=cp;c.onclick=function(){o.parentNode.removeChild(o);};o.appendChild(m);o.appendChild(ta);o.appendChild(b);o.appendChild(c);D.body.appendChild(o);m.textContent=H(\"5d0,5d5,5e1,5e3,20,5d0,5ea,20,5d4,5de,5ea,5db,5d5,5df,2e,2e,2e\");function grab(u){return new Promise(function(res,rej){var tm=setTimeout(rej,7000);fetch(u).then(function(x){return x.blob();}).then(function(bl){var link=URL.createObjectURL(bl),im=new Image();im.onload=function(){var k=Math.min(1,640/Math.max(im.width,im.height)),cv=D.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);clearTimeout(tm);res(cv.toDataURL('image/jpeg',0.7));};im.onerror=rej;im.src=link;}).catch(rej);});}if(iu){grab(iu).then(setImg,function(){}).then(fin,fin);}else{fin();}}catch(e){alert('Bookmark error: '+e.message);}})();";
+
+/* ---------- storage (per device, always wrapped) ---------- */
+function readJSON(k){ try{ var r=localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function writeJSON(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+
+function seed(){
+  var t=Date.now()-86400000*3;
+  return {
+    topics:['ארוחות בוקר','מתוקים'],
+    recipes:[
+      {id:'ex1',example:true,title:'שקשוקה',topics:['ארוחות בוקר'],time:'30 דקות',yield:'2-3 מנות',source:'',notes:'',createdAt:t,
+       ingredients:['2 כפות שמן זית','1 בצל גדול קצוץ','3 שיני שום כתושות','1 פלפל אדום חתוך','5 עגבניות בשלות קצוצות','1 כפית פפריקה מתוקה','חצי כפית כמון','מלח ופלפל','4 ביצים'],
+       steps:['מחממים שמן במחבת רחבה ומטגנים את הבצל עד שהוא שקוף.','מוסיפים שום ופלפל ומטגנים 3 דקות.','מוסיפים עגבניות ותבלינים ומבשלים על אש קטנה כ-15 דקות עד שהרוטב מסמיך.','יוצרים גומחות ברוטב, שוברים לתוכן את הביצים ומכסים.','מבשלים 5-7 דקות עד שהחלבון יציב. מגישים עם לחם.']},
+      {id:'ex2',example:true,title:'פנקייק',topics:['ארוחות בוקר','מתוקים'],time:'20 דקות',yield:'8 יחידות',source:'',notes:'',createdAt:t-1000,
+       ingredients:['1 כוס קמח','2 כפיות אבקת אפייה','1 כף סוכר','קורט מלח','1 כוס חלב','1 ביצה','2 כפות חמאה מומסת'],
+       steps:['מערבבים את היבשים בקערה.','מקציפים חלב, ביצה וחמאה ומוסיפים לקערה. מערבבים עד שהבלילה בקושי אחידה.','מחממים מחבת משומנת קלות ויוצקים כמצקת בלילה לכל פנקייק.','הופכים כשמופיעות בועות על המשטח, ואופים עוד דקה.']}
+    ]};
+}
+var data=readJSON(KEY);
+if(!data||!Array.isArray(data.recipes)) data=seed();
+if(!Array.isArray(data.topics)) data.topics=[];
+var prefs=readJSON(PREF)||{fs:1};
+function persist(){ if(!writeJSON(KEY,data)) toast('אין מקום לשמירה במכשיר. הסר תמונות או גבה את הספרייה'); }
+
+/* ---------- helpers ---------- */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function validUrl(s){ return /^https?:\/\/\S+$/i.test(s); }
+function host(u){ try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; } }
+function lines(s){ return String(s||'').split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean); }
+function stripBullet(l){ return l.replace(/^[-•*·▢☐□]+\s*/,''); }
+function stripNum(l){ return l.replace(/^(\d+[.)]|[-•*·])\s*/,''); }
+var toastT;
+function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('on');},2600); }
+function getRecipe(id){ return data.recipes.filter(function(r){return r.id===id;})[0]; }
+function ensureTopics(list){ list.forEach(function(t){ if(t&&data.topics.indexOf(t)<0) data.topics.push(t); }); }
+
+/* ---------- import parsing ---------- */
+function decodeHtml(s){ try{ return new DOMParser().parseFromString(s,'text/html').documentElement.textContent||''; }catch(e){ return s; } }
+function cleanLine(s){ return decodeHtml(String(s)).replace(/\s+/g,' ').trim(); }
+function findRecipeNode(o){
+  if(!o||typeof o!=='object') return null;
+  if(Array.isArray(o)){ for(var i=0;i<o.length;i++){ var r=findRecipeNode(o[i]); if(r) return r; } return null; }
+  var t=o['@type'];
+  if(t&&(t==='Recipe'||(Array.isArray(t)&&t.indexOf('Recipe')>=0))) return o;
+  if(o['@graph']) return findRecipeNode(o['@graph']);
+  return null;
+}
+function flattenSteps(x){
+  if(!x) return [];
+  if(typeof x==='string') return x.split(/\n+/).map(cleanLine).filter(Boolean);
+  if(Array.isArray(x)) return x.reduce(function(a,y){return a.concat(flattenSteps(y));},[]);
+  if(typeof x==='object'){ if(x.itemListElement) return flattenSteps(x.itemListElement); if(x.text) return flattenSteps(x.text); if(x.name) return flattenSteps(x.name); }
+  return [];
+}
+function isoDur(s){
+  var m=/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/i.exec(String(s||'')); if(!m) return '';
+  var min=(+m[1]||0)*1440+(+m[2]||0)*60+(+m[3]||0); if(!min) return '';
+  var h=Math.floor(min/60), r=min%60;
+  return h? (r? h+' שעות ו-'+r+' דקות' : h+' שעות') : r+' דקות';
+}
+function fromJsonLd(text){
+  var blocks=[], re=/<script[^>]*ld\+json[^>]*>([\s\S]*?)<\/script>/gi, m;
+  while((m=re.exec(text))) blocks.push(m[1]);
+  var t=text.trim(); if(!blocks.length&&/^[\[{]/.test(t)) blocks.push(t);
+  for(var i=0;i<blocks.length;i++){
+    try{
+      var r=findRecipeNode(JSON.parse(blocks[i]));
+      if(r){
+        var ing=r.recipeIngredient||r.ingredients||[]; if(!Array.isArray(ing)) ing=[ing];
+        var y=r.recipeYield; if(Array.isArray(y)) y=y[0];
+        return {title:cleanLine(r.name||''),ingredients:ing.map(cleanLine).filter(Boolean),steps:flattenSteps(r.recipeInstructions),time:isoDur(r.totalTime),yield:y?cleanLine(y):'',desc:cleanLine(r.description||'')};
+      }
+    }catch(e){}
+  }
+  return null;
+}
+var ING=/^ה?(מצרכים|מרכיבים|רכיבים|חומרים|ingredients)$/i;
+var STP=/^(אופן ההכנה|אופן הכנה|הוראות הכנה|הוראות ההכנה|הוראות|שיטת הכנה|דרך הכנה|דרך ההכנה|תהליך ההכנה|הכנה|instructions|directions|method|preparation|steps)$/i;
+var QTY=/^([\d½¼¾⅓⅔]|(כוס|כוסות|כף|כפות|כפית|כפיות|קורט|חצי|רבע|שן|שיני|חבילה|חופן|גרם|קילו|מ"ל|ml|g|kg|cup|tbsp|tsp)(\s|$))/i;
+var JUNK=/^(ממומן|ADVERTISING|תוכן שעשוי|לכתבה המלאה|לקריאת עוד|קראו עוד|פרסומת|תגובות|\d+ תגובות)/i;
+var NOGROUP=/^(?:לימון|לימונים|לבנה|לבן|לחם|לחמניה|לחמניות|לפת|לוביה|לוז|ליים|לימונית|לבנדר)(?:\s|$)/;
+function hdrType(l){ var k=l.replace(/^[#*\s]+/,'').replace(/[:：\-–—*\s]+$/,''); return ING.test(k)?'i':(STP.test(k)?'s':''); }
+function isGroup(l,next){
+  if(!next||/\d/.test(l)) return false;
+  if(l.split(' ').length>4) return false;
+  if(/[:：]$/.test(l)) return true;
+  return /^ל[א-ת]/.test(l)&&!NOGROUP.test(l);
+}
+function cleanTitle(t){ return (t||'').replace(/\s+[-|–—]\s+[^-|–—]{2,30}$/,'').trim(); }
+function blocksOf(arr){
+  var out=[],cur=[];
+  arr.forEach(function(l){ if(l){ if(!JUNK.test(l)) cur.push(l); } else if(cur.length){ out.push(cur); cur=[]; } });
+  if(cur.length) out.push(cur);
+  return out;
+}
+function parseText(text){
+  var src='',time='',yld='';
+  var all=text.split(/\r?\n/).map(function(l){return l.replace(/\s+/g,' ').trim();}).filter(function(l){
+    var m;
+    if((m=/^(מקור|source)\s*[:：]\s*(https?:\/\/\S+)/i.exec(l))){ src=m[2]; return false; }
+    if((m=/^זמן\s*[:：]\s*(.+)$/.exec(l))){ time=m[1]; return false; }
+    if((m=/^מנות\s*[:：]\s*(.+)$/.exec(l))){ yld=m[1]; return false; }
+    return true;
+  });
+  var ls=all.filter(Boolean);
+  var title='',desc='',ings=[],steps=[],iH=-1,sH=-1,i;
+  for(i=0;i<all.length;i++){
+    var ht=hdrType(all[i]);
+    if(ht==='i'&&iH<0) iH=i;
+    if(ht==='s'&&sH<0&&(iH<0||i>iH)) sH=i;
+  }
+  if(iH>=0||sH>=0){
+    if(ls[0]&&ls[0].length<=120&&!hdrType(ls[0])) title=cleanTitle(ls[0]);
+    var first=iH>=0?iH:sH, k=first-1; while(k>=0&&!all[k]) k--;
+    if(k>=1&&all[k]!==ls[0]&&all[k].length>25&&all[k].length<=220&&!hdrType(all[k])) desc=all[k];
+    if(iH>=0){
+      var reg=all.slice(iH+1,sH>=0?sH:all.length), blocks=blocksOf(reg);
+      var multi=blocks.filter(function(b){return b.length>1;}), use=multi.length?multi:blocks;
+      use.forEach(function(b){ b.forEach(function(l,j){ ings.push(isGroup(l,b[j+1])?'#'+l.replace(/[:：]\s*$/,''):l); }); });
+    }
+    if(sH>=0){
+      var sb=blocksOf(all.slice(sH+1)), num=/^\d+[.)]\s*/;
+      var numbered=sb.some(function(b){return num.test(b[0]);});
+      outer:
+      for(var q=0;q<sb.length;q++){
+        var b=sb[q];
+        if(numbered&&!num.test(b[0])&&!/^#/.test(b[0])&&steps.length) break;
+        for(var j=0;j<b.length;j++){
+          var l=b[j];
+          if(num.test(l)||/^#/.test(l)||!numbered||!steps.length) steps.push(l);
+          else steps[steps.length-1]+=' '+l;
+        }
+      }
+    }
+  } else {
+    ls.forEach(function(l,i){
+      if(i===0&&l.length<=90&&!QTY.test(l)){ title=cleanTitle(l); return; }
+      if((/^#/.test(l)||(QTY.test(l)&&!/^\d+[.)]\s/.test(l)))&&l.length<=90) ings.push(l); else steps.push(l);
+    });
+  }
+  return {title:title,desc:desc,ingredients:ings.map(stripBullet),steps:steps.map(stripNum),time:time,yield:yld,source:src};
+}
+function parseInput(raw,url){
+  var text=raw.trim();
+  /* own backup / shared library */
+  if(text.charAt(0)==='{'){
+    try{ var o=JSON.parse(text); if(o&&o.kitchenLibrary&&(Array.isArray(o.recipes)||typeof o.text==='string')) return {backup:o}; }catch(e){}
+  }
+  var d=fromJsonLd(raw);
+  if(!d){
+    if(/<\/?[a-z][^>]*>/i.test(text)){
+      text=decodeHtml(text.replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi,'').replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr|ul|ol|section)>/gi,'\n'));
+    }
+    d=parseText(text);
+  }
+  d.source=validUrl(url||'')?url:(d.source||'');
+  d.notes=''; d.topics=[];
+  return d;
+}
+
+function stripMd(s){ return String(s).replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\*\*|__/g,'').replace(/^[\s*_]+|[\s*_]+$/g,'').replace(/\s+/g,' ').trim(); }
+function fromMarkdown(md,meta){
+  var ls=String(md).split(/\r?\n/), st='intro', ings=[], steps=[], numbered=false, time='', yld='', stop=false, num=/^\d+[.)]\s*/;
+  function nextIsItem(i){ for(var k=i+1;k<ls.length;k++){ var t=ls[k].trim(); if(!t) continue; return /^(\*\*)?\d+[.)]/.test(t)||/^[*\-•]\s/.test(t); } return false; }
+  for(var i=0;i<ls.length&&!stop;i++){
+    var raw=ls[i].trim(); if(!raw) continue;
+    var hm=/^#{1,6}\s*(.+)$/.exec(raw), bo=/^\*\*([^*]+)\*\*\s*:?$/.exec(raw), head=hm?hm[1]:(bo&&!/^\d+[.)]?$/.test(bo[1].trim())?bo[1]:null);
+    if(head!==null){
+      var h=stripMd(head), t=hdrType(h);
+      if(/^(\d+\s*)?(תגובות|תגובה|comments)/i.test(h)||/טרם התפרסמו/.test(h)){ if(ings.length||steps.length) stop=true; continue; }
+      if(t==='i'){ st='ing'; continue; }
+      if(t==='s'){ st='stp'; continue; }
+      if(st==='ing'){ if(h) ings.push('#'+h.replace(/[:：]\s*$/,'')); continue; }
+      if(st==='stp'){ if(h&&nextIsItem(i)) steps.push('#'+h.replace(/[:：]\s*$/,'')); else if(steps.length) stop=true; continue; }
+      continue;
+    }
+    var bullet=/^[*\-•]\s+/.test(raw), line=stripMd(raw);
+    if(!line) continue;
+    if(st==='intro'){
+      var m;
+      if((m=/^(?:זמן(?: הכנה)?)\s*[:：]\s*(.+)$/.exec(line))) time=time||m[1];
+      else if((m=/^(?:מנות|כמות)\s*[:：]\s*(.+)$/.exec(line))) yld=yld||m[1];
+      continue;
+    }
+    if(st==='ing'){
+      var tx=stripBullet(line); if(!tx||JUNK.test(tx)) continue;
+      ings.push(!bullet&&isGroup(tx,true)?'#'+tx.replace(/[:：]\s*$/,''):tx);
+    } else {
+      if(num.test(line)){ numbered=true; steps.push(line.replace(num,'')); }
+      else if(bullet) steps.push(stripBullet(line));
+      else if(!numbered&&!JUNK.test(line)) steps.push(line);
+      else if(numbered&&!steps.length) steps.push(line);
+    }
+  }
+  var hasRecipe=ings.some(function(x){return x.charAt(0)!=='#';})||steps.some(function(x){return x.charAt(0)!=='#';});
+  if(!hasRecipe){
+    var d2=parseText(String(md).replace(/^#+\s*/gm,'').replace(/\*\*/g,''));
+    if(d2.ingredients.length||d2.steps.length){ ings=d2.ingredients; steps=d2.steps; hasRecipe=true; time=time||d2.time; yld=yld||d2.yield; }
+  }
+  if(!hasRecipe) return null;
+  return {title:cleanTitle(stripMd(meta.title||'')),desc:stripMd(meta.description||'').slice(0,400),image:'',ingredients:ings,steps:steps,time:time,yield:yld,notes:'',source:meta.url||'',topics:[]};
+}
+function fetchViaMcp(url){
+  return new Promise(function(resolve,reject){
+    if(!window.claude||!window.claude.use){ reject({code:'none'}); return; }
+    window.claude.use('mcp').then(function(m){
+      if(!m){ reject({code:'none'}); return; }
+      var opts={}; try{ if(window.AbortSignal&&AbortSignal.timeout) opts.signal=AbortSignal.timeout(90000); }catch(e){}
+      return m.callTool('TinyFish','fetch_content',{urls:[url],format:'markdown',links:false,image_links:false,iframe_links:false,page_metadata:false,purpose:'Read one recipe page for a personal recipe library'},opts).then(function(res){
+        var pl=res&&res.payload;
+        if(typeof pl==='string'){ try{ pl=JSON.parse(pl); }catch(e){ pl=null; } }
+        if(!pl&&res&&res.content&&res.content[0]&&res.content[0].text){ try{ pl=JSON.parse(res.content[0].text); }catch(e){} }
+        var r=pl&&pl.results&&pl.results[0];
+        if(!r||!r.text){ reject({code:'fetch'}); return; }
+        var d=fromMarkdown(r.text,{title:r.title,description:r.description,url:validUrl(r.final_url||'')?r.final_url:url});
+        if(!d){ reject({code:'norecipe'}); return; }
+        resolve(d);
+      });
+    }).catch(function(er){ reject(er||{code:'fetch'}); });
+  });
+}
+function pageToDraft(html,url){
+  var d=fromJsonLd(html), doc=new DOMParser().parseFromString(html,'text/html');
+  function mt(sel){ var e=doc.querySelector(sel); return e?(e.getAttribute('content')||'').trim():''; }
+  var img=mt('meta[property="og:image"]')||mt('meta[name="twitter:image"]');
+  try{ if(img) img=new URL(img,url).href; }catch(e){ img=''; }
+  var h1=doc.querySelector('h1'), ttl=cleanLine(h1?h1.textContent:'')||cleanLine(mt('meta[property="og:title"]'))||cleanLine(doc.title||'');
+  if(!d){
+    ['script','style','noscript','nav','footer','aside','header','form','iframe','svg'].forEach(function(t){ [].slice.call(doc.getElementsByTagName(t)).forEach(function(n){ n.remove(); }); });
+    var body=doc.body?doc.body.innerHTML:'';
+    var tx=decodeHtml(body.replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr|ul|ol|section|article|span)>/gi,'\n')).split(/\r?\n/), seenI=false, cut=tx.length;
+    for(var ci=0;ci<tx.length;ci++){ var tl=tx[ci].trim(); if(hdrType(tl)==='i') seenI=true; else if(seenI&&/^(\d+\s*)?(תגובות|תגובה|comments|טרם התפרסמו)/i.test(tl)){ cut=ci; break; } }
+    d=parseText(tx.slice(0,cut).join('\n'));
+  }
+  if(!d.ingredients.length&&!d.steps.length) return null;
+  if(!d.title) d.title=cleanTitle(ttl);
+  else if(ttl&&ttl.length<=140) d.title=cleanTitle(ttl);
+  d.desc=d.desc||cleanLine(mt('meta[property="og:description"]')||mt('meta[name="description"]')).slice(0,300);
+  d.source=url; d.notes=''; d.topics=[]; d.image='';
+  return {draft:d,img:img};
+}
+function proxyBase(){ return String(prefs.proxy||'').replace(/\/+$/,''); }
+function fetchViaProxy(url){
+  var base=proxyBase();
+  return fetch(base+'/?url='+encodeURIComponent(url)).then(function(r){
+    if(!r.ok) throw {code:'fetch'};
+    return r.text();
+  }).then(function(html){
+    var res=pageToDraft(html,url); if(!res) throw {code:'norecipe'};
+    if(!res.img) return res.draft;
+    return fetch(base+'/?img='+encodeURIComponent(res.img)).then(function(r){ return r.ok?r.blob():null; }).then(function(bl){
+      if(!bl||!/^image\//.test(bl.type)) return res.draft;
+      return new Promise(function(ok){ resizeImage(bl,function(du){ res.draft.image=safeImg(du); ok(res.draft); }); });
+    }).catch(function(){ return res.draft; });
+  },function(er){ throw (er&&er.code)?er:{code:'fetch'}; });
+}
+function fetchRecipe(url){
+  if(proxyBase()) return fetchViaProxy(url);
+  if(window.claude&&window.claude.use) return fetchViaMcp(url);
+  return Promise.reject({code:'noproxy'});
+}
+function fetchErrMsg(er){
+  var c=er&&er.code;
+  if(c==='noproxy') return 'ייבוא מקישור דורש כתובת של שירות הייבוא. הגדר אותה ב"גיבוי והגדרות", או הדבק את הטקסט למטה.';
+  if(c==='none'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed') return 'ייבוא אוטומטי מקישור לא זמין במסך הזה. פתח את הדף מתוך Claude, או הדבק את טקסט המתכון למטה.';
+  if(c==='server_not_connected'||c==='server_not_found'||c==='selection_required') return 'החיבור ל-TinyFish לא פעיל בחשבון הזה. הוסף אותו ב-Claude תחת Settings ← Connectors, או הדבק את הטקסט למטה.';
+  if(c==='needs_reauth') return 'צריך להתחבר מחדש ל-TinyFish ב-Claude תחת Settings ← Connectors.';
+  if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required'||c==='blocked_by_policy') return 'לא ניתנה הרשאה לשימוש ב-TinyFish. לחץ שוב ואשר, או הדבק את הטקסט למטה.';
+  if(c==='norecipe') return 'הדף נקרא אבל לא זוהה בו מתכון. נסה קישור ישיר לדף המתכון, או הדבק את הטקסט למטה.';
+  if(c==='server_unavailable'||c==='upstream_error'||c==='cancelled') return 'השירות לא הגיב בזמן. נסה שוב בעוד רגע.';
+  if(c==='tool_error'||c==='fetch') return 'לא הצלחתי לקרוא את הדף (ייתכן שהאתר חוסם גישה). נסה קישור אחר, או הדבק את הטקסט למטה.';
+  return 'הייבוא מקישור נכשל. נסה שוב, או הדבק את הטקסט למטה.';
+}
+
+/* ---------- state ---------- */
+var ui={view:'list',q:'',topic:'',id:null,draft:null,checks:{},confirm:'',wake:null,notice:'',err:''};
+document.documentElement.style.setProperty('--fs',prefs.fs||1);
+
+function go(view,extra){
+  if(ui.wake&&view!=='read'){ try{ui.wake.release();}catch(e){} ui.wake=null; }
+  ui.view=view; ui.confirm=''; ui.err=''; ui.menu=''; ui.menuDel='';
+  if(extra) for(var k in extra) ui[k]=extra[k];
+  render(); window.scrollTo(0,0);
+}
+
+/* ---------- views ---------- */
+function render(){
+  var root=$('root');
+  if(ui.view==='list') root.innerHTML=listView();
+  else if(ui.view==='read') root.innerHTML=readView();
+  else if(ui.view==='edit') root.innerHTML=editView();
+  else if(ui.view==='import') root.innerHTML=importView();
+  else if(ui.view==='topics') root.innerHTML=topicsView();
+  else if(ui.view==='settings') root.innerHTML=settingsView();
+  else if(ui.view==='quick') root.innerHTML=quickView();
+  if(ui.view==='list') renderList();
+  if(ui.view==='edit'){ renderEdTopics(); renderEdImg(); }
+}
+function backBar(title,backAct){
+  return '<header class="top"><div class="bar"><h1>'+esc(title)+'</h1><button class="btn ghost" data-act="'+(backAct||'home')+'">חזרה ←</button></div></header>';
+}
+
+function listView(){
+  return '<header class="top"><div class="bar"><h1>ספריית המתכונים</h1><button class="btn primary" data-act="import">+ מתכון</button></div>'+
+    '<input id="q" class="search" type="search" dir="auto" placeholder="חיפוש לפי שם, מצרך או נושא" value="'+esc(ui.q)+'" autocomplete="off">'+
+    '<div class="chips" id="chips"></div></header>'+
+    '<main class="cards" id="cards"></main>'+
+    '<div class="foot"><button class="btn small ghost" data-act="topics">ניהול נושאים</button><button class="btn small ghost" data-act="settings">גיבוי ושחזור</button></div>';
+}
+function matches(r){
+  if(ui.topic&&r.topics.indexOf(ui.topic)<0) return false;
+  var q=ui.q.trim().toLowerCase(); if(!q) return true;
+  var hay=[r.title,r.notes,r.topics.join(' '),r.ingredients.join(' ')].join(' ').toLowerCase();
+  return hay.indexOf(q)>=0;
+}
+function renderList(){
+  var chips=$('chips'), cards=$('cards'); if(!chips||!cards) return;
+  var h='<button class="chip" data-act="topic" data-t="" aria-pressed="'+(ui.topic===''?'true':'false')+'">הכל<span class="n">'+data.recipes.length+'</span></button>';
+  data.topics.forEach(function(t){
+    var n=data.recipes.filter(function(r){return r.topics.indexOf(t)>=0;}).length;
+    h+='<button class="chip" data-act="topic" data-t="'+esc(t)+'" aria-pressed="'+(ui.topic===t?'true':'false')+'">'+esc(t)+'<span class="n">'+n+'</span></button>';
+  });
+  chips.innerHTML=h;
+  var list=data.recipes.filter(matches).sort(function(a,b){return b.createdAt-a.createdAt;});
+  if(!list.length){
+    cards.innerHTML='<div class="empty" style="grid-column:1/-1">'+(data.recipes.length?'לא נמצאו מתכונים שמתאימים לחיפוש.':'הספרייה ריקה. לחץ על "+ מתכון" כדי לייבא מתכון מדף אינטרנט או להקליד אחד.')+'</div>';
+    return;
+  }
+  cards.innerHTML=list.map(function(r){
+    var meta=[r.time,r.yield].filter(Boolean).join(' · ');
+    return '<div class="cw"><button class="card" data-act="open" data-id="'+r.id+'">'+(r.image?'<img class="th" alt="" src="'+r.image+'">':'')+'<span class="cb"><span class="ct">'+esc(r.title)+(r.example?'<span class="badge">דוגמה</span>':'')+'</span>'+
+      (meta?'<span class="cm">'+esc(meta)+'</span>':'')+
+      (r.topics.length?'<span class="tags">'+r.topics.map(function(t){return '<span class="tag">'+esc(t)+'</span>';}).join('')+'</span>':'')+'</span></button>'+cardMenu(r)+'</div>';
+  }).join('');
+}
+
+function checkList(r,kind,items){
+  var c=ui.checks[r.id]||{}, n=0;
+  return items.map(function(t,i){
+    if(t.charAt(0)==='#') return '<li class="grp">'+esc(t.replace(/^#+\s*/,''))+'</li>';
+    n++; var key=kind+i, on=!!c[key];
+    return '<li><button data-act="check" data-k="'+key+'" aria-pressed="'+(on?'true':'false')+'"><span class="mk">'+(kind==='s'?n:'✓')+'</span><span class="txt">'+esc(t)+'</span></button></li>';
+  }).join('');
+}
+function readView(){
+  var r=getRecipe(ui.id); if(!r){ ui.view='list'; return listView(); }
+  var meta=[r.time,r.yield].filter(Boolean).join(' · ');
+  var h='<header class="top"><div class="bar"><button class="btn ghost" data-act="home">חזרה ←</button><div class="row">'+(ui.confirm==='del'?'<button class="btn danger" data-act="del-yes">כן, מחק</button><button class="btn ghost" data-act="del-no">ביטול</button>':'<button class="btn" data-act="edit">עריכה</button><button class="btn danger" data-act="del">מחיקה</button>')+'</div></div></header><article class="read">'+(r.image?'<img class="hero" alt="" src="'+r.image+'">':'')+
+    '<h1>'+esc(r.title)+(r.example?' <span class="badge">דוגמה</span>':'')+'</h1>'+
+    (meta?'<div class="meta">'+esc(meta)+'</div>':'')+(r.desc?'<p class="desc">'+esc(r.desc)+'</p>':'')+
+    (r.topics.length?'<div class="tags">'+r.topics.map(function(t){return '<span class="tag">'+esc(t)+'</span>';}).join('')+'</div>':'')+
+    '<div class="tools"><button class="btn small" data-act="fs" data-d="-0.1" aria-label="להקטין טקסט">א-</button><button class="btn small" data-act="fs" data-d="0.1" aria-label="להגדיל טקסט">א+</button>'+
+    '<button class="btn small" id="wakeBtn" data-act="wake" aria-pressed="'+(ui.wake?'true':'false')+'">מסך דולק</button>'+
+    '<button class="btn small" data-act="copy">העתקה</button><button class="btn small" data-act="edit">עריכה</button></div>';
+  if(r.ingredients.length) h+='<h2 class="sec">מצרכים</h2><ul class="list">'+checkList(r,'i',r.ingredients)+'</ul>';
+  if(r.steps.length) h+='<h2 class="sec">אופן הכנה</h2><ol class="list steps">'+checkList(r,'s',r.steps)+'</ol>';
+  if(r.notes) h+='<h2 class="sec">הערות</h2><div class="notes">'+esc(r.notes)+'</div>';
+  if(r.source) h+='<div><a class="btn small src" href="'+esc(r.source)+'" target="_blank" rel="noopener noreferrer">פתח את המקור · '+esc(host(r.source))+'</a></div>';
+  h+='<div class="danger-zone">'+(ui.confirm==='del'?
+    '<button class="btn danger" data-act="del-yes">כן, למחוק את המתכון</button><button class="btn ghost" data-act="del-no">ביטול</button>':
+    '<button class="btn danger small" data-act="del">מחיקת מתכון</button>')+'</div></article>';
+  return h;
+}
+
+function importView(){
+  return backBar('מתכון חדש')+
+  '<div class="panel">'+
+    '<div class="field"><label for="im-url">קישור למתכון</label><input id="im-url" type="url" dir="ltr" placeholder="https://" autocomplete="off" value="'+esc(ui.imUrl||'')+'"></div>'+
+    '<div class="row"><button class="btn primary" data-act="fetch-url" id="fetchBtn">ייבוא מקישור</button></div>'+
+    (ui.err?'<div class="err">'+esc(ui.err)+'</div>':'')+
+    '<div class="cm" style="color:var(--muted)">הקישור נשלח לשירות TinyFish שקורא את הדף. המתכון עצמו נשמר רק במכשיר שלך. את התוצאה תוכל לבדוק ולתקן לפני השמירה.</div>'+
+    '<hr style="border:0;border-top:1px solid var(--line,#ddd);width:100%">'+
+    '<div class="field"><label for="im-text">או הדבקת טקסט של מתכון (העתקה מהדף, או קוד מקור)</label><textarea id="im-text" dir="auto" placeholder="הדבק כאן"></textarea></div>'+
+    '<div class="row"><button class="btn" data-act="parse">נתח טקסט והמשך</button><button class="btn" data-act="manual">הקלדה ידנית</button></div>'+
+    '<div class="notice" style="background:var(--surface2);color:var(--ink)">הייבוא מקישור לא עובד? <button class="btn small" data-act="quick" style="margin-inline-start:8px">חלופה: סימנייה בדפדפן</button></div>'+
+  '</div>';
+}
+
+function editView(){
+  var d=ui.draft;
+  return backBar(d.id?'עריכת מתכון':'בדיקה ושמירה',d.id?'open-back':'home')+
+  (ui.notice?'<div class="notice" style="margin-bottom:12px">'+esc(ui.notice)+'</div>':'')+
+  '<div class="panel">'+
+    '<div class="field"><label for="ed-title">שם המתכון</label><input id="ed-title" dir="auto" value="'+esc(d.title)+'"></div>'+
+    '<div class="field"><label for="ed-desc">תיאור</label><textarea id="ed-desc" dir="auto" style="min-height:70px">'+esc(d.desc||'')+'</textarea></div>'+
+    '<div class="field"><span style="font-weight:700;font-size:.92rem">תמונה</span><div class="imgbox"><div id="edImg"></div>'+
+      '<button class="btn small" data-act="pick-img">צילום או בחירה מהגלריה</button><button class="btn small ghost" data-act="rm-img" id="rmImg">הסרה</button></div>'+
+      '<input id="ed-img" type="file" accept="image/*" hidden></div>'+
+    '<div class="row"><div class="field"><label for="ed-time">זמן</label><input id="ed-time" dir="auto" value="'+esc(d.time)+'" placeholder="45 דקות"></div>'+
+    '<div class="field"><label for="ed-yield">מנות</label><input id="ed-yield" dir="auto" value="'+esc(d.yield)+'" placeholder="4 מנות"></div></div>'+
+    '<div class="field"><span style="font-weight:700;font-size:.92rem">נושאים</span><div class="edchips" id="edTopics"></div>'+
+      '<div class="trow"><input id="ed-newtopic" dir="auto" placeholder="נושא חדש" autocomplete="off"><button class="btn small" data-act="addtopic-ed">הוספה</button></div></div>'+
+    '<div class="field"><label for="ed-ings">מצרכים (שורה לכל מצרך. שורה שמתחילה ב-# היא כותרת קבוצה, למשל #לקערה א)</label><textarea id="ed-ings" dir="auto">'+esc(d.ingredients.join('\n'))+'</textarea></div>'+
+    '<div class="field"><label for="ed-steps">אופן הכנה (שורה לכל שלב. גם כאן אפשר כותרות עם #)</label><textarea id="ed-steps" dir="auto">'+esc(d.steps.join('\n'))+'</textarea></div>'+
+    '<div class="field"><label for="ed-notes">הערות</label><textarea id="ed-notes" dir="auto" style="min-height:90px">'+esc(d.notes)+'</textarea></div>'+
+    '<div class="field"><label for="ed-source">קישור למקור</label><input id="ed-source" type="url" dir="ltr" value="'+esc(d.source)+'" placeholder="https://"></div>'+
+    (ui.err?'<div class="err">'+esc(ui.err)+'</div>':'')+
+    '<div class="row"><button class="btn primary" data-act="save">שמירה</button><button class="btn ghost" data-act="'+(d.id?'open-back':'home')+'">ביטול</button></div>'+
+  '</div>';
+}
+function renderEdTopics(){
+  var el=$('edTopics'); if(!el) return;
+  el.innerHTML=data.topics.length?data.topics.map(function(t){
+    return '<button class="chip" data-act="ed-topic" data-t="'+esc(t)+'" aria-pressed="'+(ui.draft.topics.indexOf(t)>=0?'true':'false')+'">'+esc(t)+'</button>';
+  }).join(''):'<span class="cm" style="color:var(--muted)">עדיין אין נושאים. הוסף את הראשון.</span>';
+}
+
+function topicsView(){
+  var rows=data.topics.map(function(t,i){
+    var n=data.recipes.filter(function(r){return r.topics.indexOf(t)>=0;}).length;
+    return '<div class="trow"><input id="tp'+i+'" dir="auto" value="'+esc(t)+'" data-old="'+esc(t)+'" data-act-change="rename" aria-label="שם הנושא">'+
+      (ui.confirm==='tp'+i?
+        '<button class="btn danger small" data-act="tdel-yes" data-t="'+esc(t)+'">מחק</button><button class="btn ghost small" data-act="tdel-no">ביטול</button>':
+        '<span class="cm" style="color:var(--muted)">'+n+'</span><button class="btn small" data-act="tdel" data-i="'+i+'">הסרה</button>')+'</div>';
+  }).join('');
+  return backBar('ניהול נושאים')+'<div class="panel">'+
+    (rows||'<div class="empty">אין נושאים עדיין.</div>')+
+    '<div class="trow"><input id="tp-new" dir="auto" placeholder="נושא חדש" autocomplete="off"><button class="btn primary small" data-act="addtopic">הוספה</button></div>'+
+    '<div class="cm" style="color:var(--muted)">שינוי שם נשמר בעת היציאה מהשדה. הסרת נושא לא מוחקת מתכונים.</div></div>';
+}
+
+function quickView(){
+  return backBar('ייבוא מהיר מקישור','import')+'<div class="panel">'+
+    '<div>כפתור קטן בדפדפן שקורא את המתכון מהדף שפתוח ומכין אותו לספרייה. הכל קורה במכשיר שלך, בלי שרת. הדפדפן לא מאפשר לדף להוריד קישור בעצמו, ולכן הקריאה נעשית מתוך הדף של המתכון.</div>'+
+    '<h2 style="font-size:1.2rem">התקנה חד-פעמית (Safari באייפון)</h2>'+
+    '<ol class="steps-help"><li>לחץ "העתקת הקוד" למטה.</li><li>ב-Safari פתח כל אתר, לחץ על שיתוף ובחר "הוסף למועדפים". שמור.</li><li>פתח את הסימניות, לחץ "עריכה" ובחר את הסימנייה החדשה. שנה את שמה ל"שמור מתכון". מחק את הכתובת והדבק במקומה את הקוד. שמור.</li></ol>'+
+    '<div><button class="btn primary" data-act="bm-copy">העתקת הקוד</button></div>'+
+    '<div class="cm" style="color:var(--muted)">באנדרואיד (Chrome) התהליך דומה: שמור סימנייה, ערוך אותה והדבק את הקוד בשדה הכתובת. להפעלה מקלידים את שם הסימנייה בשורת הכתובת ובוחרים אותה מההצעות.</div>'+
+    '<h2 style="font-size:1.2rem">שימוש</h2>'+
+    '<ol class="steps-help"><li>פתח דף של מתכון באתר.</li><li>הפעל את הסימנייה "שמור מתכון". תופיע חלונית בראש הדף.</li><li>לחץ "העתקה" בחלונית.</li><li>חזור לספרייה, לחץ "+ מתכון", הדבק ולחץ "נתח והמשך".</li></ol>'+
+  '</div>';
+}
+function exportJSON(){ return JSON.stringify({kitchenLibrary:1,exportedAt:new Date().toISOString(),topics:data.topics,recipes:data.recipes},null,1); }
+function settingsView(){
+  return backBar('גיבוי ושחזור')+'<div class="panel">'+
+    '<div><b>'+data.recipes.length+' מתכונים</b> נשמרים על המכשיר הזה בלבד. בטלפון אחר הספרייה נפרדת. ניקוי נתוני האתר בדפדפן ימחק אותם, לכן כדאי לגבות מדי פעם.</div>'+
+    '<div class="row"><button class="btn primary" data-act="bk-copy">העתקת גיבוי</button><button class="btn" data-act="bk-save" id="bkSave">שמירה כקובץ</button></div>'+
+    '<div class="field"><label for="bk-file">שחזור מקובץ גיבוי</label><input id="bk-file" type="file" accept=".json,.txt,application/json,text/plain"></div>'+
+    '<div class="field"><label for="set-proxy">כתובת שירות הייבוא מקישור (Worker)</label><input id="set-proxy" type="url" dir="ltr" placeholder="https://....workers.dev" value="'+esc(prefs.proxy||'')+'" autocomplete="off"></div>'+
+    '<div class="cm" style="color:var(--muted)">אפשר גם להדביק טקסט גיבוי במסך "+ מתכון". שחזור מוסיף מתכונים חסרים ואינו מוחק קיימים.</div></div>';
+}
+
+/* ---------- actions ---------- */
+function importBackup(o){
+  var n=0; ensureTopics(o.topics||[]);
+  o.recipes.forEach(function(r){
+    if(!r||!r.title||getRecipe(r.id)) return; r.image=safeImg(r.image);
+    r.id=r.id||uid(); r.topics=r.topics||[]; r.ingredients=r.ingredients||[]; r.steps=r.steps||[]; r.createdAt=r.createdAt||Date.now();
+    ensureTopics(r.topics); data.recipes.push(r); n++;
+  });
+  persist(); return n;
+}
+function recipeText(r){
+  var t=r.title+'\n';
+  if(r.desc) t+=r.desc+'\n';
+  if(r.time) t+='זמן: '+r.time+'\n'; if(r.yield) t+='מנות: '+r.yield+'\n';
+  t+='\nמצרכים\n'+r.ingredients.map(function(x){ return x.charAt(0)==='#'?x:'- '+x; }).join('\n')+'\n\nאופן הכנה\n';
+  var n=0; t+=r.steps.map(function(x){ if(x.charAt(0)==='#') return x; n++; return n+'. '+x; }).join('\n');
+  if(r.notes) t+='\n\n'+r.notes;
+  if(r.source) t+='\n\nמקור: '+r.source;
+  return t;
+}
+function copyText(s,okMsg){
+  function fallback(){
+    try{
+      var ta=document.createElement('textarea'); ta.value=s; ta.style.cssText='position:fixed;opacity:0;top:0'; document.body.appendChild(ta); ta.select();
+      var ok=document.execCommand('copy'); document.body.removeChild(ta);
+      if(ok){ toast(okMsg); return; }
+    }catch(e){}
+    showSheet(s);
+  }
+  try{ navigator.clipboard.writeText(s).then(function(){toast(okMsg);},fallback); }catch(e){ fallback(); }
+}
+function showSheet(s){
+  var d=document.createElement('div'); d.className='sheet'; d.id='sheet';
+  d.innerHTML='<div class="panel"><div>ההעתקה האוטומטית נחסמה. סמן את הטקסט והעתק ידנית.</div><textarea id="sheetTa" dir="auto" style="min-height:180px;width:100%" readonly>'+esc(s)+'</textarea><button class="btn primary" data-act="sheet-close">סגירה</button></div>';
+  document.body.appendChild(d); var ta=$('sheetTa'); ta.focus(); ta.select();
+}
+async function toggleWake(){
+  try{
+    if(ui.wake){ await ui.wake.release(); ui.wake=null; }
+    else{ ui.wake=await navigator.wakeLock.request('screen'); ui.wake.addEventListener('release',function(){ ui.wake=null; var b=$('wakeBtn'); if(b) b.setAttribute('aria-pressed','false'); }); }
+  }catch(e){ ui.wake=null; toast('המכשיר לא אפשר להשאיר את המסך דולק'); }
+  var b=$('wakeBtn'); if(b) b.setAttribute('aria-pressed',ui.wake?'true':'false');
+}
+function saveDraft(){
+  var g=function(i){return $(i).value;};
+  var title=g('ed-title').trim(), src=g('ed-source').trim();
+  if(!title){ ui.err='חסר שם למתכון.'; keepDraft(); render(); return; }
+  if(src&&!validUrl(src)){ ui.err='הקישור צריך להתחיל ב-http או https.'; keepDraft(); render(); return; }
+  var d=ui.draft;
+  var r={id:d.id||uid(),title:title,source:src,time:g('ed-time').trim(),yield:g('ed-yield').trim(),
+    ingredients:lines(g('ed-ings')).map(stripBullet),steps:lines(g('ed-steps')).map(stripNum),notes:g('ed-notes').trim(),desc:g('ed-desc').trim(),image:d.image||'',
+    topics:d.topics.slice(),createdAt:d.createdAt||Date.now(),example:false};
+  ensureTopics(r.topics);
+  var i=data.recipes.map(function(x){return x.id;}).indexOf(r.id);
+  if(i>=0) data.recipes[i]=r; else data.recipes.push(r);
+  persist(); toast('המתכון נשמר'); ui.notice='';
+  go('read',{id:r.id});
+}
+function safeImg(s){ return (typeof s==='string'&&s.length<600000&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(s))?s:''; }
+function resizeImage(file,cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var s=Math.min(1,800/Math.max(im.width,im.height)), c=document.createElement('canvas');
+      c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      cb(c.toDataURL('image/jpeg',0.72));
+    };
+    im.onerror=function(){ cb(''); };
+    im.src=fr.result;
+  };
+  fr.onerror=function(){ cb(''); };
+  fr.readAsDataURL(file);
+}
+function renderEdImg(){
+  var el=$('edImg'), rm=$('rmImg'); if(!el) return;
+  el.innerHTML=ui.draft.image?'<img alt="" src="'+ui.draft.image+'">':'';
+  if(rm) rm.hidden=!ui.draft.image;
+}
+function keepDraft(){
+  var g=function(i){var e=$(i); return e?e.value:'';};
+  var d=ui.draft; d.title=g('ed-title'); d.desc=g('ed-desc'); d.time=g('ed-time'); d.yield=g('ed-yield'); d.source=g('ed-source'); d.notes=g('ed-notes');
+  d.ingredients=g('ed-ings').split('\n'); d.steps=g('ed-steps').split('\n');
+}
+function cardMenu(r){
+  var open=ui.menu===r.id;
+  var s='<button class="kebab" data-act="menu" data-id="'+r.id+'" aria-label="אפשרויות" aria-expanded="'+(open?'true':'false')+'">⋯</button>';
+  if(open) s+='<div class="cmenu">'+(ui.menuDel===r.id?
+    '<button class="btn danger small" data-act="del-id-yes" data-id="'+r.id+'">כן, מחק</button><button class="btn small ghost" data-act="del-id-no">ביטול</button>':
+    '<button class="btn small" data-act="edit-id" data-id="'+r.id+'">עריכה</button><button class="btn small danger" data-act="del-id" data-id="'+r.id+'">מחיקה</button>')+'</div>';
+  return s;
+}
+function draftFrom(r){ return {id:r.id,createdAt:r.createdAt,title:r.title,desc:r.desc||'',image:r.image||'',ingredients:r.ingredients.slice(),steps:r.steps.slice(),time:r.time||'',yield:r.yield||'',notes:r.notes||'',source:r.source||'',topics:r.topics.slice()}; }
+function emptyDraft(){ return {desc:'',image:'',title:'',ingredients:[],steps:[],time:'',yield:'',notes:'',source:'',topics:[]}; }
+
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]'); if(!b) return;
+  var a=b.getAttribute('data-act');
+  switch(a){
+    case 'home': ui.notice=''; go('list'); break;
+    case 'topic': ui.topic=b.getAttribute('data-t'); renderList(); break;
+    case 'open': go('read',{id:b.getAttribute('data-id')}); break;
+    case 'open-back': ui.draft&&ui.draft.id?go('read',{id:ui.draft.id}):go('list'); break;
+    case 'import': ui.imUrl=''; go('import'); break;
+    case 'fetch-url':{
+      if(ui.busy) return;
+      var fu=$('im-url').value.trim(); ui.imUrl=fu;
+      if(!validUrl(fu)){ ui.err='הדבק קישור שמתחיל ב-http או https.'; render(); return; }
+      ui.busy=true; ui.err=''; b.disabled=true; b.textContent='קורא את הדף...';
+      fetchRecipe(fu).then(function(d){
+        ui.busy=false; if(ui.view!=='import') return;
+        ui.notice='יובא מהקישור. בדוק את התוכן, הוסף תמונה אם תרצה ושייך לנושא לפני שמירה.';
+        go('edit',{draft:d});
+      },function(er){
+        ui.busy=false; if(ui.view!=='import') return;
+        ui.err=fetchErrMsg(er); render();
+      });
+      break; }
+    case 'manual': ui.notice=''; go('edit',{draft:emptyDraft()}); break;
+    case 'parse':{
+      var raw=$('im-text').value, url=$('im-url').value.trim();
+      if(!raw.trim()){ ui.err='הדבק קודם את הטקסט של המתכון.'; render(); return; }
+      if(url&&!validUrl(url)){ ui.err='הקישור צריך להתחיל ב-http או https.'; render(); return; }
+      var res=parseInput(raw,url);
+      if(res.backup&&res.backup.text){
+        var pt=parseText(res.backup.text); pt.image=safeImg(res.backup.image); pt.notes=''; pt.topics=[];
+        if(validUrl(url)) pt.source=url;
+        ui.notice='זוהה מהדף. בדוק ושייך לנושא לפני שמירה.';
+        go('edit',{draft:pt}); return;
+      }
+      if(res.backup&&res.backup.single&&res.backup.recipes.length===1){
+        var rr=res.backup.recipes[0];
+        ui.notice='זוהה מהדף. בדוק ושייך לנושא לפני שמירה.';
+        go('edit',{draft:{title:rr.title||'',ingredients:rr.ingredients||[],steps:rr.steps||[],time:rr.time||'',yield:rr.yield||'',notes:'',desc:rr.desc||'',image:safeImg(rr.image),source:validUrl(url)?url:(rr.source||''),topics:[]}}); return;
+      }
+      if(res.backup){ var n=importBackup(res.backup); toast(n?('נוספו '+n+' מתכונים'):'כל המתכונים כבר קיימים'); go('list'); return; }
+      ui.notice=(res.ingredients.length||res.steps.length)?'זוהה אוטומטית. בדוק את השם, המצרכים והשלבים לפני השמירה.':'לא זוהו מצרכים ושלבים. מלא ידנית או הדבק טקסט מלא יותר.';
+      go('edit',{draft:res}); break; }
+    case 'check':{
+      var r0=getRecipe(ui.id); if(!r0) return; var k=b.getAttribute('data-k');
+      var c=ui.checks[r0.id]=ui.checks[r0.id]||{}; c[k]=!c[k]; b.setAttribute('aria-pressed',c[k]?'true':'false'); break; }
+    case 'fs':{
+      var v=Math.min(1.6,Math.max(0.8,(prefs.fs||1)+parseFloat(b.getAttribute('data-d')))); prefs.fs=Math.round(v*10)/10;
+      document.documentElement.style.setProperty('--fs',prefs.fs); writeJSON(PREF,prefs); break; }
+    case 'wake': toggleWake(); break;
+    case 'copy': copyText(recipeText(getRecipe(ui.id)),'המתכון הועתק'); break;
+    case 'edit':{ var r1=getRecipe(ui.id); ui.notice=''; go('edit',{draft:{id:r1.id,createdAt:r1.createdAt,title:r1.title,ingredients:r1.ingredients.slice(),steps:r1.steps.slice(),time:r1.time||'',yield:r1.yield||'',notes:r1.notes||'',desc:r1.desc||'',image:r1.image||'',source:r1.source||'',topics:r1.topics.slice()}}); break; }
+    case 'del': ui.confirm='del'; render(); break;
+    case 'del-no': ui.confirm=''; render(); break;
+    case 'del-yes': data.recipes=data.recipes.filter(function(x){return x.id!==ui.id;}); persist(); toast('המתכון נמחק'); go('list'); break;
+    case 'ed-topic':{ var t=b.getAttribute('data-t'), i=ui.draft.topics.indexOf(t); if(i>=0) ui.draft.topics.splice(i,1); else ui.draft.topics.push(t); renderEdTopics(); break; }
+    case 'addtopic-ed':{ var nt=$('ed-newtopic').value.trim(); if(!nt) return; ensureTopics([nt]); if(ui.draft.topics.indexOf(nt)<0) ui.draft.topics.push(nt); persist(); $('ed-newtopic').value=''; renderEdTopics(); break; }
+    case 'menu': ui.menu=(ui.menu===b.getAttribute('data-id'))?'':b.getAttribute('data-id'); ui.menuDel=''; renderList(); break;
+    case 'edit-id':{ var re=getRecipe(b.getAttribute('data-id')); if(!re) return; ui.notice=''; ui.id=re.id; go('edit',{draft:draftFrom(re)}); break; }
+    case 'del-id': ui.menuDel=b.getAttribute('data-id'); renderList(); break;
+    case 'del-id-no': ui.menuDel=''; renderList(); break;
+    case 'del-id-yes':{ var di=b.getAttribute('data-id'); data.recipes=data.recipes.filter(function(x){return x.id!==di;}); ui.menu=''; ui.menuDel=''; persist(); toast('המתכון נמחק'); renderList(); break; }
+    case 'pick-img': $('ed-img').click(); break;
+    case 'rm-img': ui.draft.image=''; renderEdImg(); break;
+    case 'save': saveDraft(); break;
+    case 'topics': go('topics'); break;
+    case 'addtopic':{ var nt2=$('tp-new').value.trim(); if(!nt2) return; if(data.topics.indexOf(nt2)>=0){ toast('הנושא כבר קיים'); return; } data.topics.push(nt2); persist(); render(); break; }
+    case 'tdel': ui.confirm='tp'+b.getAttribute('data-i'); render(); break;
+    case 'tdel-no': ui.confirm=''; render(); break;
+    case 'tdel-yes':{ var tn=b.getAttribute('data-t'); data.topics=data.topics.filter(function(x){return x!==tn;});
+      data.recipes.forEach(function(r){ r.topics=r.topics.filter(function(x){return x!==tn;}); }); if(ui.topic===tn) ui.topic=''; persist(); ui.confirm=''; render(); break; }
+    case 'settings': go('settings'); break;
+    case 'quick': go('quick'); break;
+    case 'bm-copy': copyText(BM,'הקוד הועתק'); break;
+    case 'bk-copy': copyText(exportJSON(),'הגיבוי הועתק. הדבק אותו במקום בטוח'); break;
+    case 'bk-save':{
+      var f=function(){ toast('שמירה כקובץ לא זמינה כאן. השתמש בהעתקת גיבוי'); var x=$('bkSave'); if(x) x.hidden=true; };
+      if(!window.claude||!window.claude.use){ try{ var bl=new Blob([exportJSON()],{type:'application/json'}), an=document.createElement('a'); an.href=URL.createObjectURL(bl); an.download='recipes-backup.json'; document.body.appendChild(an); an.click(); an.remove(); toast('הקובץ נשמר'); }catch(e){ f(); } break; }
+      window.claude.use('downloads').then(function(dl){
+        if(!dl){ f(); return; }
+        dl.save({filename:'recipes-backup.json',data:exportJSON()}).then(function(){toast('הקובץ נשמר');},function(er){ if(er&&er.code!=='declined') f(); });
+      },f); break; }
+    case 'sheet-close':{ var s=$('sheet'); if(s) s.remove(); break; }
+  }
+});
+document.addEventListener('input',function(e){
+  if(e.target.id==='q'){ ui.q=e.target.value; renderList(); }
+});
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.id==='set-proxy'){ var pv=t.value.trim(); if(pv&&!validUrl(pv)){ toast('הכתובת צריכה להתחיל ב-https'); return; } prefs.proxy=pv; writeJSON(PREF,prefs); toast(pv?'הכתובת נשמרה':'הכתובת נמחקה'); return; }
+  if(t.getAttribute&&t.getAttribute('data-act-change')==='rename'){
+    var old=t.getAttribute('data-old'), nu=t.value.trim();
+    if(!nu||nu===old){ t.value=old; return; }
+    if(data.topics.indexOf(nu)>=0){ toast('הנושא כבר קיים'); t.value=old; return; }
+    data.topics[data.topics.indexOf(old)]=nu;
+    data.recipes.forEach(function(r){ var i=r.topics.indexOf(old); if(i>=0) r.topics[i]=nu; });
+    if(ui.topic===old) ui.topic=nu;
+    t.setAttribute('data-old',nu); persist(); toast('השם עודכן');
+  }
+  if(t.id==='ed-img'&&t.files&&t.files[0]){
+    resizeImage(t.files[0],function(d){ if(d){ ui.draft.image=d; renderEdImg(); } else toast('לא הצלחתי לקרוא את התמונה'); });
+    t.value=''; return;
+  }
+  if(t.id==='bk-file'&&t.files&&t.files[0]){
+    var fr=new FileReader();
+    fr.onload=function(){
+      try{ var o=JSON.parse(fr.result); if(!o||!o.kitchenLibrary||!Array.isArray(o.recipes)) throw 0;
+        var n=importBackup(o); toast(n?('שוחזרו '+n+' מתכונים'):'כל המתכונים כבר קיימים'); go('list');
+      }catch(er){ toast('הקובץ אינו גיבוי תקין של הספרייה'); }
+    };
+    fr.readAsText(t.files[0]);
+  }
+});
+
+render();
+})();
+</script>
+
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}</script>
+</html>
