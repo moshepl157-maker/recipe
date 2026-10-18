@@ -211,7 +211,7 @@ function fromJsonLd(text){
 var ING=/^ה?(מצרכים|מרכיבים|רכיבים|חומרים|ingredients)$/i;
 var STP=/^(אופן ההכנה|אופן הכנה|הוראות הכנה|הוראות ההכנה|הוראות|שיטת הכנה|דרך הכנה|דרך ההכנה|תהליך ההכנה|הכנה|instructions|directions|method|preparation|steps)$/i;
 var QTY=/^([\d½¼¾⅓⅔]|(כוס|כוסות|כף|כפות|כפית|כפיות|קורט|חצי|רבע|שן|שיני|חבילה|חופן|גרם|קילו|מ"ל|ml|g|kg|cup|tbsp|tsp)(\s|$))/i;
-var JUNK=/^(ממומן|ADVERTISING|תוכן שעשוי|לכתבה המלאה|לקריאת עוד|קראו עוד|פרסומת|תגובות|\d+ תגובות)/i;
+var JUNK=/^(ממומן|ADVERTISING|תוכן שעשוי|לכתבה המלאה|לקריאת עוד|קראו עוד|פרסומת|תגובות|\d+ תגובות|לבלוג של|ולאינסטגרם|מצאתם טעות|טבלת המרות|הדפס|שתף|.*\|\s*צילום)/i;
 var NOGROUP=/^(?:לימון|לימונים|לבנה|לבן|לחם|לחמניה|לחמניות|לפת|לוביה|לוז|ליים|לימונית|לבנדר)(?:\s|$)/;
 function hdrType(l){ var k=l.replace(/^[#*\s]+/,'').replace(/[:：\-–—*\s]+$/,''); return ING.test(k)?'i':(STP.test(k)?'s':''); }
 function isGroup(l,next){
@@ -236,6 +236,11 @@ function parseText(text){
     if((m=/^מנות\s*[:：]\s*(.+)$/.exec(l))){ yld=m[1]; return false; }
     return true;
   });
+  all=(function(a){ var o=[],m; for(var z=0;z<a.length;z++){ var l=a[z];
+    if(/^\d{1,2}[.)]?$/.test(l)&&a[z+1]){ o.push(parseInt(l,10)+'. '+a[z+1]); z++; continue; }
+    if((m=/^\((\d+[^)]*מנות?[^)]*)\)$/.exec(l))){ yld=yld||m[1]; continue; }
+    if(l==='זמן כולל'&&a[z+1]){ time=time||a[z+1]; z++; continue; }
+    o.push(l); } return o; })(all);
   var ls=all.filter(Boolean);
   var title='',desc='',ings=[],steps=[],iH=-1,sH=-1,i;
   for(i=0;i<all.length;i++){
@@ -362,7 +367,7 @@ function pageToDraft(html,url){
   if(!d){
     ['script','style','noscript','nav','footer','aside','header','form','iframe','svg'].forEach(function(t){ [].slice.call(doc.getElementsByTagName(t)).forEach(function(n){ n.remove(); }); });
     var body=doc.body?doc.body.innerHTML:'';
-    var tx=decodeHtml(body.replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr|ul|ol|section|article|span)>/gi,'\n')).split(/\r?\n/), seenI=false, cut=tx.length;
+    var tx=decodeHtml(body.replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr|ul|ol|section|article|span|small|figcaption)>/gi,'\n')).split(/\r?\n/), seenI=false, cut=tx.length;
     for(var ci=0;ci<tx.length;ci++){ var tl=tx[ci].trim(); if(hdrType(tl)==='i') seenI=true; else if(seenI&&/^(\d+\s*)?(תגובות|תגובה|comments|טרם התפרסמו)/i.test(tl)){ cut=ci; break; } }
     d=parseText(tx.slice(0,cut).join('\n'));
   }
